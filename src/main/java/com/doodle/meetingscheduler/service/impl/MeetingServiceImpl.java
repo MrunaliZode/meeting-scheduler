@@ -4,6 +4,7 @@ import com.doodle.meetingscheduler.data.Meeting;
 import com.doodle.meetingscheduler.data.SlotStatus;
 import com.doodle.meetingscheduler.data.TimeSlot;
 import com.doodle.meetingscheduler.data.User;
+import com.doodle.meetingscheduler.dto.MeetingDTO;
 import com.doodle.meetingscheduler.exceptions.InvalidRequestException;
 import com.doodle.meetingscheduler.exceptions.MeetingConflictException;
 import com.doodle.meetingscheduler.exceptions.MeetingNotFoundException;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class MeetingServiceImpl implements MeetingService {
@@ -98,6 +100,22 @@ public class MeetingServiceImpl implements MeetingService {
         slotRepository.save(slot);
 
         meetingRepository.delete(meeting);
+    }
+
+    @Override
+    public MeetingDTO toDTO(Meeting meeting) {
+        MeetingDTO dto = new MeetingDTO();
+        dto.setId(meeting.getId());
+        dto.setTitle(meeting.getTitle());
+        dto.setDescription(meeting.getDescription());
+        dto.setSlotId(meeting.getSlot().getId());
+        dto.setParticipantIds(meeting.getParticipants().stream().map(User::getId).collect(Collectors.toSet()));
+        return dto;
+    }
+
+    @Override
+    public List<MeetingDTO> toDTOList(List<Meeting> meetings) {
+        return meetings.stream().map(this::toDTO).collect(Collectors.toList());
     }
 }
 

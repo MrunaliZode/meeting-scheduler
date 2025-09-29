@@ -3,6 +3,7 @@ package com.doodle.meetingscheduler.service.impl;
 import com.doodle.meetingscheduler.data.SlotStatus;
 import com.doodle.meetingscheduler.data.TimeSlot;
 import com.doodle.meetingscheduler.data.User;
+import com.doodle.meetingscheduler.dto.TimeSlotDTO;
 import com.doodle.meetingscheduler.exceptions.InvalidRequestException;
 import com.doodle.meetingscheduler.exceptions.MeetingConflictException;
 import com.doodle.meetingscheduler.exceptions.SlotNotFoundException;
@@ -164,15 +165,64 @@ public class TimeSlotServiceImpl implements TimeSlotService {
         return busySlot;
     }
 
+    @Override
+    public List<TimeSlot> getSlotsForUser(Long userId, String from, String to, String status) {
+        // Validate from/to rule
+        if ((from != null && to == null) || (from == null && to != null)) {
+            throw new InvalidRequestException("Both 'from' and 'to' parameters must be provided together.");
+        }
 
-    public List<TimeSlot> getSlotsByStatus(Long userId, LocalDateTime from, LocalDateTime to, SlotStatus status) {
-        return slotRepository.findByUserIdAndStatusAndStartTimeBetween(userId, status, from, to);
+        // Parse LocalDateTime safely
+        LocalDateTime start = null;
+        LocalDateTime end = null;
+        try {
+            if (from != null) start = LocalDateTime.parse(from);
+            if (to != null) end = LocalDateTime.parse(to);
+        } catch (Exception e) {
+            throw new InvalidRequestException("Invalid date format. Expected ISO_LOCAL_DATE_TIME.");
+        }
+
+        // Parse status safely
+        SlotStatus slotStatus = null;
+        if (status != null) {
+            try {
+                slotStatus = SlotStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new InvalidRequestException("Invalid status value: " + status);
+            }
+        }
+
+        // Case 1: range + status
+        if (start != null && end != null && slotStatus != null) {
+            return slotRepository.findByUserIdAndStartTimeGreaterThanEqualAndEndTimeLessThanEqualAndStatus(
+                    userId, start, end, slotStatus);
+        }
+
+        // Case 2: range only
+        if (start != null && end != null) {
+            return slotRepository.findByUserIdAndStartTimeGreaterThanEqualAndEndTimeLessThanEqual(userId, start, end);
+        }
+
+        // Case 3: status only
+        if (slotStatus != null) {
+            return slotRepository.findByUserIdAndStatus(userId, slotStatus);
+        }
+
+        // Case 4: no filters → return all slots
+        return slotRepository.findByUserId(userId);
     }
 
     @Override
-    public List<TimeSlot> getSlotsForUser(Long userId) {
-        return slotRepository.findByUserId(userId);
+    public List<TimeSlot> getSlotsInRange(Long userId, LocalDateTime from, LocalDateTime to) {
+        return slotRepository.findByUserIdAndStartTimeGreaterThanEqualAndEndTimeLessThanEqual(userId, from, to);
     }
+
+    @Override
+    public List<TimeSlot> getSlotsByStatus(Long userId, LocalDateTime from, LocalDateTime to, SlotStatus status) {
+        return slotRepository.findByUserIdAndStartTimeGreaterThanEqualAndEndTimeLessThanEqualAndStatus(
+                userId, from, to, status);
+    }
+
 
     public void deleteSlot(Long slotId) {
         TimeSlot slot = slotRepository.findById(slotId)
@@ -268,6 +318,22 @@ public class TimeSlotServiceImpl implements TimeSlotService {
             this.start = start;
             this.end = end;
         }
+    }
+
+    @Override
+    public TimeSlotDTO toDTO(TimeSlot slot) {
+        TimeSlotDTO dto = new TimeSlotDTO();
+        dto.setId(slot.getId());
+        dto.setStartTime(slot.getStartTime());
+        dto.setEndTime(slot.getEndTime());
+        dto.setStatus(slot.getStatus());
+        dto.setUserId(slot.getUser().getId());
+        return dto;
+    }
+
+    @Override
+    public List<TimeSlotDTO> toDTOList(List<TimeSlot> slots) {
+        return slots.stream().map(this::toDTO).collect(Collectors.toList());
     }
 }
 
