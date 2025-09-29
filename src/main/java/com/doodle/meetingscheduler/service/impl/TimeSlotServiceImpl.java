@@ -3,13 +3,13 @@ package com.doodle.meetingscheduler.service.impl;
 import com.doodle.meetingscheduler.data.SlotStatus;
 import com.doodle.meetingscheduler.data.TimeSlot;
 import com.doodle.meetingscheduler.data.User;
-import com.doodle.meetingscheduler.dto.TimeSlotDTO;
 import com.doodle.meetingscheduler.exceptions.InvalidRequestException;
 import com.doodle.meetingscheduler.exceptions.MeetingConflictException;
 import com.doodle.meetingscheduler.exceptions.SlotNotFoundException;
 import com.doodle.meetingscheduler.repository.TimeSlotRepository;
 import com.doodle.meetingscheduler.repository.UserRepository;
 import com.doodle.meetingscheduler.service.TimeSlotService;
+import com.doodle.meetingscheduler.utils.Utility;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +29,9 @@ public class TimeSlotServiceImpl implements TimeSlotService {
     }
 
     @Transactional
-    public TimeSlot createSlot(Long userId, LocalDateTime start, LocalDateTime end) {
+    public TimeSlot createSlot(Long userId, String from, String to) {
+        LocalDateTime start = Utility.toLocalDateTime(from);
+        LocalDateTime end = Utility.toLocalDateTime(to);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new InvalidRequestException("User not found"));
 
@@ -46,24 +48,28 @@ public class TimeSlotServiceImpl implements TimeSlotService {
 
     @Transactional
     @Override
-    public TimeSlot updateSlot(Long slotId, LocalDateTime newStart, LocalDateTime newEnd, SlotStatus newStatus) {
+    public TimeSlot updateSlot(Long slotId, String newStart, String newEnd, String newSlotStatus) {
+
+        LocalDateTime newFrom = Utility.toLocalDateTime(newStart);
+        LocalDateTime newTo = Utility.toLocalDateTime(newEnd);
+        SlotStatus newStatus = Utility.toSlotStatus(newSlotStatus);
         TimeSlot slot = slotRepository.findById(slotId)
                 .orElseThrow(() -> new SlotNotFoundException("Slot not found"));
 
         // Update start/end time if provided
-        if (newStart != null && newEnd != null) {
-            if (!newStart.isBefore(newEnd)) {
+        if (newFrom != null && newTo != null) {
+            if (!newFrom.isBefore(newTo)) {
                 throw new InvalidRequestException("Invalid time range");
             }
-            slot.setStartTime(newStart);
-            slot.setEndTime(newEnd);
+            slot.setStartTime(newFrom);
+            slot.setEndTime(newTo);
         }
 
         // Update status if provided
         if (newStatus != null && !newStatus.equals(slot.getStatus())) {
             if (newStatus == SlotStatus.BUSY) {
                 // Reuse markSlotAsBusy logic to handle splitting
-                return markSlot(slotId, slot.getStartTime(), slot.getEndTime(), SlotStatus.BUSY);
+                return markSlot(slotId, slot.getStartTime().toString(), slot.getEndTime().toString(), SlotStatus.BUSY.name());
             } else {
                 // Mark FREE and merge with adjacent free slots
                 slot.setStatus(SlotStatus.FREE);
@@ -100,11 +106,15 @@ public class TimeSlotServiceImpl implements TimeSlotService {
 
     @Override
     @Transactional
-    public TimeSlot markSlot(Long slotId, LocalDateTime start, LocalDateTime end, SlotStatus status) {
+    public TimeSlot markSlot(Long slotId, String from, String to, String status) {
+
+        LocalDateTime start = Utility.toLocalDateTime(from);
+        LocalDateTime end = Utility.toLocalDateTime(to);
+        SlotStatus slotStatus = Utility.toSlotStatus(status);
         TimeSlot slot = slotRepository.findById(slotId)
                 .orElseThrow(() -> new SlotNotFoundException("Slot not found"));
 
-        if (status == SlotStatus.FREE) {
+        if (slotStatus == SlotStatus.FREE) {
             // Mark as FREE and merge with adjacent free slots
             slot.setStatus(SlotStatus.FREE);
 
@@ -146,7 +156,7 @@ public class TimeSlotServiceImpl implements TimeSlotService {
         busySlot.setUser(slot.getUser());
         busySlot.setStartTime(busyStart);
         busySlot.setEndTime(busyEnd);
-        busySlot.setStatus(status); // BUSY or BOOKED
+        busySlot.setStatus(slotStatus); // BUSY or BOOKED
         newSlots.add(busySlot);
 
         // After busy
@@ -176,8 +186,8 @@ public class TimeSlotServiceImpl implements TimeSlotService {
         LocalDateTime start = null;
         LocalDateTime end = null;
         try {
-            if (from != null) start = LocalDateTime.parse(from);
-            if (to != null) end = LocalDateTime.parse(to);
+            if (from != null) start = Utility.toLocalDateTime(from);
+            if (to != null) end = Utility.toLocalDateTime(to);
         } catch (Exception e) {
             throw new InvalidRequestException("Invalid date format. Expected ISO_LOCAL_DATE_TIME.");
         }
@@ -186,7 +196,7 @@ public class TimeSlotServiceImpl implements TimeSlotService {
         SlotStatus slotStatus = null;
         if (status != null) {
             try {
-                slotStatus = SlotStatus.valueOf(status.toUpperCase());
+                slotStatus = Utility.toSlotStatus(status);
             } catch (IllegalArgumentException e) {
                 throw new InvalidRequestException("Invalid status value: " + status);
             }
@@ -231,9 +241,13 @@ public class TimeSlotServiceImpl implements TimeSlotService {
     }
 
     @Override
-    public List<TimeSlot> getAggregatedFreeSlots(List<Long> userIds, LocalDateTime from, LocalDateTime to) {
+    public List<TimeSlot> getAggregatedFreeSlots(List<Long> userIds, String from, String to) {
+
+        LocalDateTime start = Utility.toLocalDateTime(from);
+        LocalDateTime end = Utility.toLocalDateTime(to);
+
         // Fetch all FREE slots for each user in the range
-        List<TimeSlot> allSlots = slotRepository.findByUserIdInAndStatusAndStartTimeBetween(userIds, SlotStatus.FREE, from, to);
+        List<TimeSlot> allSlots = slotRepository.findByUserIdInAndStatusAndStartTimeBetween(userIds, SlotStatus.FREE, start, end);
 
         // Group slots by user
         Map<Long, List<TimeSlot>> slotsByUser = allSlots.stream()
@@ -318,22 +332,6 @@ public class TimeSlotServiceImpl implements TimeSlotService {
             this.start = start;
             this.end = end;
         }
-    }
-
-    @Override
-    public TimeSlotDTO toDTO(TimeSlot slot) {
-        TimeSlotDTO dto = new TimeSlotDTO();
-        dto.setId(slot.getId());
-        dto.setStartTime(slot.getStartTime());
-        dto.setEndTime(slot.getEndTime());
-        dto.setStatus(slot.getStatus());
-        dto.setUserId(slot.getUser().getId());
-        return dto;
-    }
-
-    @Override
-    public List<TimeSlotDTO> toDTOList(List<TimeSlot> slots) {
-        return slots.stream().map(this::toDTO).collect(Collectors.toList());
     }
 }
 

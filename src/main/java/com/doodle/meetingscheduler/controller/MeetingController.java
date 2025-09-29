@@ -5,13 +5,13 @@ import com.doodle.meetingscheduler.dto.CreateMeetingRequest;
 import com.doodle.meetingscheduler.dto.MeetingDTO;
 import com.doodle.meetingscheduler.dto.UpdateMeetingRequest;
 import com.doodle.meetingscheduler.service.MeetingService;
+import com.doodle.meetingscheduler.utils.Utility;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -37,7 +37,7 @@ public class MeetingController {
                 request.getTitle(),
                 request.getDescription(),
                 request.getParticipantIds());
-        return ResponseEntity.status(201).body(meetingService.toDTO(created));
+        return ResponseEntity.status(201).body(Utility.toMeetingDTO(created));
     }
 
     @GetMapping("/users/{userId}")
@@ -50,8 +50,8 @@ public class MeetingController {
                                          @RequestParam String from,
                                          @RequestParam String to) {
 
-        List<Meeting> meetings = meetingService.getMeetingsForUser(userId, LocalDateTime.parse(from), LocalDateTime.parse(to));
-        return ResponseEntity.ok(meetingService.toDTOList(meetings));
+        List<Meeting> meetings = meetingService.getMeetingsForUser(userId, from, to);
+        return ResponseEntity.ok(Utility.toMeetingDTOList(meetings));
     }
 
     @GetMapping("/{id}")
@@ -62,7 +62,7 @@ public class MeetingController {
     })
     public ResponseEntity<MeetingDTO> getMeetingById(@PathVariable Long id) {
         Meeting meeting = meetingService.getMeeting(id);
-        return ResponseEntity.ok(meetingService.toDTO(meeting));
+        return ResponseEntity.ok(Utility.toMeetingDTO(meeting));
     }
 
     @PutMapping("/{id}")
@@ -74,7 +74,7 @@ public class MeetingController {
     })
     public ResponseEntity<MeetingDTO> updateMeeting(@PathVariable Long id, @RequestBody UpdateMeetingRequest request) {
         Meeting updated = meetingService.updateMeeting(id, request.getTitle(), request.getDescription());
-        return ResponseEntity.ok(meetingService.toDTO(updated));
+        return ResponseEntity.ok(Utility.toMeetingDTO(updated));
     }
 
     @DeleteMapping("/{id}")
