@@ -4,6 +4,10 @@ import com.doodle.meetingscheduler.data.Meeting;
 import com.doodle.meetingscheduler.data.SlotStatus;
 import com.doodle.meetingscheduler.data.TimeSlot;
 import com.doodle.meetingscheduler.data.User;
+import com.doodle.meetingscheduler.exceptions.InvalidRequestException;
+import com.doodle.meetingscheduler.exceptions.MeetingConflictException;
+import com.doodle.meetingscheduler.exceptions.MeetingNotFoundException;
+import com.doodle.meetingscheduler.exceptions.SlotNotFoundException;
 import com.doodle.meetingscheduler.repository.MeetingRepository;
 import com.doodle.meetingscheduler.repository.TimeSlotRepository;
 import com.doodle.meetingscheduler.repository.UserRepository;
@@ -31,10 +35,10 @@ public class MeetingServiceImpl implements MeetingService {
     @Transactional
     public Meeting bookMeeting(Long slotId, String title, String description, List<Long> participantIds) {
         TimeSlot slot = slotRepository.findById(slotId)
-                .orElseThrow(() -> new IllegalArgumentException("Slot not found"));
+                .orElseThrow(() -> new SlotNotFoundException("Slot not found"));
 
         if (slot.getStatus() != SlotStatus.FREE) {
-            throw new IllegalArgumentException("Slot is not free for booking");
+            throw new MeetingConflictException("Slot is not free for booking");
         }
 
         List<Meeting> overlaps = meetingRepository.findOverlappingMeetings(
@@ -42,16 +46,16 @@ public class MeetingServiceImpl implements MeetingService {
         );
 
         if (!overlaps.isEmpty()) {
-            throw new IllegalArgumentException("One or more participants already have overlapping meetings");
+            throw new InvalidRequestException("One or more participants already have overlapping meetings");
         }
 
         List<User> participants = userRepository.findAllById(participantIds);
         if (participants.isEmpty()) {
-            throw new IllegalArgumentException("No participants found");
+            throw new InvalidRequestException("No participants found");
         }
 
         if (participants.size() != participantIds.size()) {
-            throw new IllegalArgumentException("Some participant IDs are invalid");
+            throw new InvalidRequestException("Some participant IDs are invalid");
         }
 
         slot.setStatus(SlotStatus.BOOKED);
@@ -74,7 +78,7 @@ public class MeetingServiceImpl implements MeetingService {
     @Override
     public Meeting getMeeting(Long meetingId) {
         return meetingRepository.findById(meetingId)
-                .orElseThrow(() -> new RuntimeException("Meeting not found"));
+                .orElseThrow(() -> new MeetingNotFoundException("Meeting not found"));
     }
 
     @Override

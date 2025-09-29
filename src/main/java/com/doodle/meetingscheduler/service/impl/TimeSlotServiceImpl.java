@@ -3,6 +3,9 @@ package com.doodle.meetingscheduler.service.impl;
 import com.doodle.meetingscheduler.data.SlotStatus;
 import com.doodle.meetingscheduler.data.TimeSlot;
 import com.doodle.meetingscheduler.data.User;
+import com.doodle.meetingscheduler.exceptions.InvalidRequestException;
+import com.doodle.meetingscheduler.exceptions.MeetingConflictException;
+import com.doodle.meetingscheduler.exceptions.SlotNotFoundException;
 import com.doodle.meetingscheduler.repository.TimeSlotRepository;
 import com.doodle.meetingscheduler.repository.UserRepository;
 import com.doodle.meetingscheduler.service.TimeSlotService;
@@ -27,9 +30,9 @@ public class TimeSlotServiceImpl implements TimeSlotService {
     @Transactional
     public TimeSlot createSlot(Long userId, LocalDateTime start, LocalDateTime end) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new InvalidRequestException("User not found"));
 
-        if (!start.isBefore(end)) throw new RuntimeException("Invalid time range");
+        if (!start.isBefore(end)) throw new InvalidRequestException("Invalid time range");
 
         TimeSlot slot = new TimeSlot();
         slot.setUser(user);
@@ -44,12 +47,12 @@ public class TimeSlotServiceImpl implements TimeSlotService {
     @Override
     public TimeSlot updateSlot(Long slotId, LocalDateTime newStart, LocalDateTime newEnd, SlotStatus newStatus) {
         TimeSlot slot = slotRepository.findById(slotId)
-                .orElseThrow(() -> new RuntimeException("Slot not found"));
+                .orElseThrow(() -> new SlotNotFoundException("Slot not found"));
 
         // Update start/end time if provided
         if (newStart != null && newEnd != null) {
             if (!newStart.isBefore(newEnd)) {
-                throw new IllegalArgumentException("Invalid time range");
+                throw new InvalidRequestException("Invalid time range");
             }
             slot.setStartTime(newStart);
             slot.setEndTime(newEnd);
@@ -98,7 +101,7 @@ public class TimeSlotServiceImpl implements TimeSlotService {
     @Transactional
     public TimeSlot markSlot(Long slotId, LocalDateTime start, LocalDateTime end, SlotStatus status) {
         TimeSlot slot = slotRepository.findById(slotId)
-                .orElseThrow(() -> new IllegalArgumentException("Slot not found"));
+                .orElseThrow(() -> new SlotNotFoundException("Slot not found"));
 
         if (status == SlotStatus.FREE) {
             // Mark as FREE and merge with adjacent free slots
@@ -106,7 +109,7 @@ public class TimeSlotServiceImpl implements TimeSlotService {
 
             // Optional: Update times if provided
             if (start != null && end != null) {
-                if (!start.isBefore(end)) throw new IllegalArgumentException("Invalid time range");
+                if (!start.isBefore(end)) throw new InvalidRequestException("Invalid time range");
                 slot.setStartTime(start);
                 slot.setEndTime(end);
             }
@@ -119,7 +122,7 @@ public class TimeSlotServiceImpl implements TimeSlotService {
 
         // For BUSY or BOOKED, keep previous split logic
         if (slot.getStatus() != SlotStatus.FREE) {
-            throw new IllegalArgumentException("Cannot mark a non-free slot as BUSY/BOOKED");
+            throw new MeetingConflictException("Cannot mark a non-free slot as BUSY/BOOKED");
         }
 
         LocalDateTime busyStart = start != null ? start : slot.getStartTime();
@@ -173,7 +176,7 @@ public class TimeSlotServiceImpl implements TimeSlotService {
 
     public void deleteSlot(Long slotId) {
         TimeSlot slot = slotRepository.findById(slotId)
-                .orElseThrow(() -> new RuntimeException("Slot not found"));
+                .orElseThrow(() -> new SlotNotFoundException("Slot not found"));
         slotRepository.delete(slot);
     }
 

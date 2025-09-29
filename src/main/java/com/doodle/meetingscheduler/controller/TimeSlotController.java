@@ -4,6 +4,7 @@ import com.doodle.meetingscheduler.data.SlotStatus;
 import com.doodle.meetingscheduler.data.TimeSlot;
 import com.doodle.meetingscheduler.dto.UpdateSlotRequest;
 import com.doodle.meetingscheduler.service.TimeSlotService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -20,54 +21,55 @@ public class TimeSlotController {
     }
 
     @PostMapping("/users/{userId}")
-    public TimeSlot createSlot(@PathVariable Long userId,
-                               @RequestParam String start,
-                               @RequestParam String end) {
-        return slotService.createSlot(userId, LocalDateTime.parse(start), LocalDateTime.parse(end));
+    public ResponseEntity<TimeSlot> createSlot(@PathVariable Long userId,
+                                              @RequestParam String start,
+                                              @RequestParam String end) {
+        return ResponseEntity.status(201).body(slotService.createSlot(userId, LocalDateTime.parse(start), LocalDateTime.parse(end)));
     }
 
     @PutMapping("/{slotId}/status")
-    public TimeSlot markBusy(@PathVariable Long slotId,
+    public ResponseEntity<TimeSlot> markBusy(@PathVariable Long slotId,
                              @RequestParam String start,
                              @RequestParam String end,
                              @RequestParam String status) {
-        return slotService.markSlot(slotId, LocalDateTime.parse(start), LocalDateTime.parse(end), SlotStatus.valueOf(status));
+        return ResponseEntity.ok(slotService.markSlot(slotId, LocalDateTime.parse(start), LocalDateTime.parse(end), SlotStatus.valueOf(status)));
     }
 
     @GetMapping("/users/{userId}")
-    public List<TimeSlot> getSlotsByStatus(@PathVariable Long userId,
+    public ResponseEntity<List<TimeSlot>> getSlotsByStatus(@PathVariable Long userId,
                                        @RequestParam String from,
                                        @RequestParam String to, @RequestParam String status) {
-        return slotService.getSlotsByStatus(userId, LocalDateTime.parse(from), LocalDateTime.parse(to),
-                SlotStatus.valueOf(status));
+        return ResponseEntity.ok(slotService.getSlotsByStatus(userId, LocalDateTime.parse(from), LocalDateTime.parse(to),
+                SlotStatus.valueOf(status)));
     }
 
     @GetMapping("/aggregate")
-    public List<TimeSlot> getAggregatedSlots(
+    public ResponseEntity<List<TimeSlot>> getAggregatedSlots(
             @RequestParam List<Long> users,
             @RequestParam String from,
             @RequestParam String to) {
-        return slotService.getAggregatedFreeSlots(users,
+        return ResponseEntity.ok(slotService.getAggregatedFreeSlots(users,
                 LocalDateTime.parse(from),
-                LocalDateTime.parse(to));
+                LocalDateTime.parse(to)));
     }
 
     @PutMapping
-    public TimeSlot updateSlot(@RequestBody UpdateSlotRequest updateSlot) {
-        return slotService.updateSlot(updateSlot.getSlotId(),
+    public ResponseEntity<TimeSlot> updateSlot(@RequestBody UpdateSlotRequest updateSlot) {
+        return ResponseEntity.ok(slotService.updateSlot(updateSlot.getSlotId(),
                 LocalDateTime.parse(updateSlot.getStart()),
                 LocalDateTime.parse(updateSlot.getEnd()),
-                SlotStatus.valueOf(updateSlot.getStatus()));
+                SlotStatus.valueOf(updateSlot.getStatus())));
     }
 
     @DeleteMapping("/{id}")
-    public void deleteSlot(@PathVariable Long slotId) {
+    public ResponseEntity<Void> deleteSlot(@PathVariable Long slotId) {
         slotService.deleteSlot(slotId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}")
-    public List<TimeSlot> getSlotsForUser(@PathVariable Long userId) {
-        return slotService.getSlotsForUser(userId);
+    public ResponseEntity<List<TimeSlot>> getSlotsForUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(slotService.getSlotsForUser(userId));
     }
 }
 
