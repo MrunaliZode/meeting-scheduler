@@ -1,10 +1,12 @@
 package com.doodle.meetingscheduler.data;
 
 import jakarta.persistence.*;
+import lombok.Data;
 
 import java.util.HashSet;
 import java.util.Set;
 
+@Data
 @Entity
 @Table(name = "meetings")
 public class Meeting {

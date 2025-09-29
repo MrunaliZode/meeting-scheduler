@@ -22,5 +22,8 @@ public class TimeSlot {
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
+
+    @OneToOne(mappedBy = "slot")
+    private Meeting meeting;
 }
 
