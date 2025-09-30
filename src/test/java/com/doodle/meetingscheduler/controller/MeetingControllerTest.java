@@ -1,130 +1,122 @@
 package com.doodle.meetingscheduler.controller;
 
 import com.doodle.meetingscheduler.data.Meeting;
-import com.doodle.meetingscheduler.data.TimeSlot;
-import com.doodle.meetingscheduler.dto.CreateMeetingRequest;
-import com.doodle.meetingscheduler.dto.MeetingDTO;
-import com.doodle.meetingscheduler.dto.UpdateMeetingRequest;
+import com.doodle.meetingscheduler.data.User;
+import com.doodle.meetingscheduler.exceptions.MeetingNotFoundException;
 import com.doodle.meetingscheduler.service.MeetingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@WebMvcTest(MeetingController.class)
 class MeetingControllerTest {
 
-//    @Mock
-//    private MeetingService meetingService;
-//
-//    @InjectMocks
-//    private MeetingController meetingController;
-//
-//    private Meeting meeting;
-//
-//    @BeforeEach
-//    void setUp() {
-//        MockitoAnnotations.openMocks(this);
-//
-//        meeting = new Meeting();
-//        meeting.setId(1L);
-//        meeting.setTitle("Team Sync");
-//        meeting.setDescription("Weekly team meeting");
-////        meeting.setStart(LocalDateTime.now());
-////        meeting.setEnd(LocalDateTime.now().plusHours(1));
-//    }
-//
-//    @Test
-//    void testBookMeeting() {
-//        CreateMeetingRequest request = new CreateMeetingRequest();
-//        request.setUserId(1L);
-//        request.setTitle("Team Sync");
-//        request.setDescription("Weekly team meeting");
-//        request.setParticipantIds(Arrays.asList(2L, 3L));
-//        request.setFrom(LocalDateTime.now().toString());
-//        request.setTo(LocalDateTime.now().plusHours(1).toString());
-//
-//        when(meetingService.bookMeeting(anyLong(), anyString(), anyString(), anyList(), any(), any()))
-//                .thenReturn(meeting);
-//
-//        ResponseEntity<MeetingDTO> response = meetingController.bookMeeting(request);
-//
-//        assertEquals(201, response.getStatusCodeValue());
-//        assertEquals(meeting.getTitle(), response.getBody().getTitle());
-//
-//        verify(meetingService, times(1))
-//                .bookMeeting(anyLong(), anyString(), anyString(), anyList(), any(), any());
-//    }
-//
-//    @Test
-//    void testGetMeetingsForUsers() {
-//        Page<Meeting> meetingPage = new PageImpl<>(List.of(meeting));
-//        when(meetingService.getMeetingsForUsers(anyList(), any(), any(), anyInt(), anyInt()))
-//                .thenReturn(meetingPage);
-//
-//        ResponseEntity<List<MeetingDTO>> response = meetingController.getMeetingsForUsers(
-//                Arrays.asList(1L, 2L), null, null, 0, 10);
-//
-//        assertEquals(200, response.getStatusCodeValue());
-//        assertEquals(1, response.getBody().size());
-//
-//        verify(meetingService, times(1))
-//                .getMeetingsForUsers(anyList(), any(), any(), anyInt(), anyInt());
-//    }
-//
-//    @Test
-//    void testGetMeetingById() {
-//        when(meetingService.getMeeting(anyLong())).thenReturn(meeting);
-//
-//        ResponseEntity<MeetingDTO> response = meetingController.getMeetingById(1L);
-//
-//        assertEquals(200, response.getStatusCodeValue());
-//        assertEquals(meeting.getTitle(), response.getBody().getTitle());
-//
-//        verify(meetingService, times(1)).getMeeting(anyLong());
-//    }
-//
-//    @Test
-//    void testUpdateMeeting() {
-//        UpdateMeetingRequest request = new UpdateMeetingRequest();
-//        request.setTitle("Updated Title");
-//        request.setDescription("Updated Description");
-//
-//        meeting.setTitle(request.getTitle());
-//        meeting.setDescription(request.getDescription());
-//
-//        when(meetingService.updateMeeting(anyLong(), anyString(), anyString()))
-//                .thenReturn(meeting);
-//
-//        ResponseEntity<MeetingDTO> response = meetingController.updateMeeting(1L, request);
-//
-//        assertEquals(200, response.getStatusCodeValue());
-//        assertEquals("Updated Title", response.getBody().getTitle());
-//        assertEquals("Updated Description", response.getBody().getDescription());
-//
-//        verify(meetingService, times(1))
-//                .updateMeeting(anyLong(), anyString(), anyString());
-//    }
-//
-//    @Test
-//    void testDeleteMeeting() {
-//        doNothing().when(meetingService).deleteMeeting(anyLong());
-//
-//        ResponseEntity<Void> response = meetingController.delete(1L);
-//
-//        assertEquals(204, response.getStatusCodeValue());
-//
-//        verify(meetingService, times(1)).deleteMeeting(anyLong());
-//    }
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private MeetingService meetingService;
+
+    private Meeting meeting;
+
+    @BeforeEach
+    void setup() {
+        meeting = new Meeting();
+        meeting.setId(1L);
+        meeting.setTitle("Team Sync");
+        meeting.setDescription("Daily standup");
+        meeting.setParticipants(Set.of(new User(1L, "Alice", "alice@test.com")));
+    }
+
+    // --------- BOOK MEETING ---------
+    @Test
+    void shouldBookMeetingSuccessfully() throws Exception {
+        Mockito.when(meetingService.bookMeeting(any(), any(), any(), anyList(), any(), any()))
+                .thenReturn(meeting);
+
+        String requestJson = """
+            {
+              "userId": 1,
+              "title": "Team Sync",
+              "description": "Daily standup",
+              "participantIds": [1,2,3],
+              "from": "2025-10-01T10:00:00",
+              "to": "2025-10-01T10:30:00"
+            }
+        """;
+
+        mockMvc.perform(post("/meetings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title", is("Team Sync")))
+                .andExpect(jsonPath("$.description", is("Daily standup")));
+    }
+
+    // --------- GET MEETINGS FOR USERS ---------
+    @Test
+    void shouldGetMeetingsForUsers() throws Exception {
+        Page<Meeting> page = new PageImpl<>(List.of(meeting));
+        Mockito.when(meetingService.getMeetingsForUsers(anyList(), any(), any(), anyInt(), anyInt()))
+                .thenReturn(page);
+
+        mockMvc.perform(get("/meetings/users")
+                        .param("userIds", "1", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].title", is("Team Sync")));
+    }
+
+    @Test
+    void shouldReturnEmptyListWhenNoMeetingsFound() throws Exception {
+        Page<Meeting> emptyPage = Page.empty();
+        Mockito.when(meetingService.getMeetingsForUsers(anyList(), any(), any(), anyInt(), anyInt()))
+                .thenReturn(emptyPage);
+
+        mockMvc.perform(get("/meetings/users")
+                        .param("userIds", "99"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[]"));
+    }
+
+    // --------- GET MEETING BY ID ---------
+    @Test
+    void shouldGetMeetingById() throws Exception {
+        Mockito.when(meetingService.getMeeting(1L)).thenReturn(meeting);
+
+        mockMvc.perform(get("/meetings/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title", is("Team Sync")));
+    }
+
+    @Test
+    void shouldReturn404WhenMeetingNotFound() throws Exception {
+        Mockito.when(meetingService.getMeeting(99L)).thenThrow(new MeetingNotFoundException("Meeting not found"));
+
+        mockMvc.perform(get("/meetings/99"))
+                .andExpect(status().isNotFound());
+    }
+
+    // --------- DELETE MEETING ---------
+    @Test
+    void shouldDeleteMeetingSuccessfully() throws Exception {
+        mockMvc.perform(delete("/meetings/1"))
+                .andExpect(status().isNoContent());
+
+        Mockito.verify(meetingService).deleteMeeting(1L);
+    }
 }
