@@ -3,33 +3,30 @@ package com.doodle.meetingscheduler.repository;
 import com.doodle.meetingscheduler.data.Meeting;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Handles CRUD Operation for 'meetings' table
+ */
 public interface MeetingRepository extends JpaRepository<Meeting, Long> {
-    // Fetch meetings where the user is a participant AND slot is within the given range
-    @Query("SELECT m FROM Meeting m " +
-            "JOIN m.participants p " +
-            "WHERE p.id = :userId " +
-            "AND m.slot.startTime >= :from " +
-            "AND m.slot.endTime <= :to")
-    List<Meeting> findByParticipantAndTimeRange(
-            @Param("userId") Long userId,
-            @Param("from") LocalDateTime from,
-            @Param("to") LocalDateTime to
-    );
 
-    List<Meeting> findBySlotUserId(Long userId);
-
-    @Query("SELECT m FROM Meeting m " +
+    /**
+     * This query returns all the rows that matches the given time range from the
+     * time slots for all the users specified in the @param participantIds.
+     *
+     * @param participantIds lists all the participants of the meeting
+     * @param from           meeting start time
+     * @param to             meeting end time
+     * @return returns the union of all time slots available within the specified period for all participants
+     */
+    @Query("SELECT DISTINCT m FROM Meeting m " +
             "JOIN m.participants p " +
+            "JOIN m.slots s " +
             "WHERE p.id IN :participantIds " +
-            "AND m.slot.startTime < :slotEnd " +
-            "AND m.slot.endTime > :slotStart")
-    List<Meeting> findOverlappingMeetings(
-            @Param("participantIds") List<Long> participantIds,
-            @Param("slotStart") LocalDateTime slotStart,
-            @Param("slotEnd") LocalDateTime slotEnd);
+            "AND s.startTime >= :from " +
+            "AND s.endTime <= :to")
+    List<Meeting> findMeetingsByParticipantIdsAndStartTimeGreaterThanEqualsAndEndTimeLessThanEquals(List<Long> participantIds, LocalDateTime from, LocalDateTime to);
+
 }

@@ -1,14 +1,17 @@
 package com.doodle.meetingscheduler.data;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.util.HashSet;
 import java.util.Set;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "meetings")
+@AllArgsConstructor
+@NoArgsConstructor
 public class Meeting {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -17,9 +20,10 @@ public class Meeting {
     private String title;
     private String description;
 
-    @OneToOne
-    @JoinColumn(name = "slot_id")
-    private TimeSlot slot;
+    @OneToMany(mappedBy = "meeting", cascade = CascadeType.ALL)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<TimeSlot> slots = new HashSet<>();
 
     @ManyToMany
     @JoinTable(
@@ -29,4 +33,3 @@ public class Meeting {
     )
     private Set<User> participants = new HashSet<>();
 }
-

@@ -3,12 +3,12 @@ package com.doodle.meetingscheduler.controller;
 import com.doodle.meetingscheduler.data.Meeting;
 import com.doodle.meetingscheduler.dto.CreateMeetingRequest;
 import com.doodle.meetingscheduler.dto.MeetingDTO;
-import com.doodle.meetingscheduler.dto.UpdateMeetingRequest;
 import com.doodle.meetingscheduler.service.MeetingService;
 import com.doodle.meetingscheduler.utils.Utility;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,25 +33,35 @@ public class MeetingController {
             @ApiResponse(responseCode = "400", description = "Invalid request (missing or invalid participants)")
     })
     public ResponseEntity<MeetingDTO> bookMeeting(@RequestBody CreateMeetingRequest request) {
-        Meeting created = meetingService.bookMeeting(request.getSlotId(),
+        Meeting created = meetingService.bookMeeting(
+                request.getUserId(),
                 request.getTitle(),
                 request.getDescription(),
-                request.getParticipantIds());
+                request.getParticipantIds(),
+                request.getFrom(),
+                request.getTo()
+        );
         return ResponseEntity.status(201).body(Utility.toMeetingDTO(created));
     }
 
-    @GetMapping("/users/{userId}")
-    @Operation(summary = "Get meetings for user", description = "Fetch all meetings of a user within a given date range.")
+    @GetMapping("/users")
+    @Operation(summary = "Get meetings for users", description = "Fetch meetings for one or more users with optional date range.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Meetings for the user retrieved successfully"),
+            @ApiResponse(responseCode = "200", description = "Meetings retrieved successfully"),
             @ApiResponse(responseCode = "404", description = "User not found")
     })
-    public ResponseEntity<List<MeetingDTO>> getUserMeetings(@PathVariable Long userId,
-                                         @RequestParam String from,
-                                         @RequestParam String to) {
+    public ResponseEntity<List<MeetingDTO>> getMeetingsForUsers(
+            @RequestParam List<Long> userIds,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
+            @RequestParam(required = false, defaultValue = "0") Integer page,
+            @RequestParam(required = false, defaultValue = "50") Integer size) {
 
-        List<Meeting> meetings = meetingService.getMeetingsForUser(userId, from, to);
-        return ResponseEntity.ok(Utility.toMeetingDTOList(meetings));
+        if (userIds == null) {
+            userIds = List.of();
+        }
+        Page<Meeting> meetings = meetingService.getMeetingsForUsers(userIds, from, to, page, size);
+        return ResponseEntity.ok(Utility.toMeetingDTOPage(meetings));
     }
 
     @GetMapping("/{id}")
@@ -63,18 +73,6 @@ public class MeetingController {
     public ResponseEntity<MeetingDTO> getMeetingById(@PathVariable Long id) {
         Meeting meeting = meetingService.getMeeting(id);
         return ResponseEntity.ok(Utility.toMeetingDTO(meeting));
-    }
-
-    @PutMapping("/{id}")
-    @Operation(summary = "Update meeting", description = "Update the title and description of a meeting.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Meeting updated successfully"),
-            @ApiResponse(responseCode = "404", description = "Meeting not found"),
-            @ApiResponse(responseCode = "400", description = "Invalid update request")
-    })
-    public ResponseEntity<MeetingDTO> updateMeeting(@PathVariable Long id, @RequestBody UpdateMeetingRequest request) {
-        Meeting updated = meetingService.updateMeeting(id, request.getTitle(), request.getDescription());
-        return ResponseEntity.ok(Utility.toMeetingDTO(updated));
     }
 
     @DeleteMapping("/{id}")
