@@ -57,6 +57,66 @@ OpenAPI UI (Swagger) will be available at: `http://localhost:8080/swagger-ui.htm
 
 Please Note: The container startup for the first time will take some time as we will pre-populate some data in the database.
 
+If running locally without Docker:
+
+* add below content to the application.properties file:
+```
+  spring.datasource.url=jdbc:postgresql://localhost:5433/meeting_scheduler_db
+spring.datasource.username=doodle
+spring.datasource.password=doodle123
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# JPA Configuration
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+```
+
+* Open the pgAdmin and run below script to create table and schema
+
+```
+CREATE USER doodle WITH PASSWORD 'doodle123';
+CREATE DATABASE meeting_scheduler_db;
+GRANT ALL PRIVILEGES ON DATABASE meeting_scheduler_db TO doodle;
+```
+* Open the Query tool for the schema created in the `meeting_scheduler_db` and run below script
+
+```
+-- Table: users
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255),
+    email VARCHAR(255)
+);
+
+-- Table: meetings
+CREATE TABLE meetings (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255),
+    description TEXT
+);
+
+-- Table: time_slots
+CREATE TABLE time_slots (
+    id SERIAL PRIMARY KEY,
+    start_time TIMESTAMP,
+    end_time TIMESTAMP,
+    status VARCHAR(50),
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+    meeting_id BIGINT REFERENCES meetings(id) ON DELETE SET NULL
+);
+
+-- Indexes on time_slots
+CREATE INDEX idx_slot_user_time ON time_slots(user_id, start_time, end_time);
+CREATE INDEX idx_slot_status ON time_slots(status);
+
+-- Table: meeting_participants (join table)
+CREATE TABLE meeting_participants (
+    meeting_id BIGINT REFERENCES meetings(id) ON DELETE CASCADE,
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+    PRIMARY KEY(meeting_id, user_id)
+);
+```
+
 ---
 
 ## API endpoints (overview + examples)
@@ -160,7 +220,7 @@ Run tests:
 
 * Preventing creation of duplicate slots.
 
-* Preventing creation of overlapping slots (2025-10-18T09:00:00 - 2025-10-18T09:30:00 already exists and user is trying to create a time slot 2025-10-18T09:15:00 to 2025-10-18T09:45:00)
+* Preventing creation of overlapping slots (`2025-10-18T09:00:00` - `2025-10-18T09:30:00` already exists and user is trying to create a time slot `2025-10-18T09:15:00` to `2025-10-18T09:45:00`)
 
 * Complete implementation of recurrence rules and bulk-generation of recurring slots.
 
