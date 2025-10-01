@@ -9,14 +9,15 @@ This mini doodle is a small, high-performance meeting scheduling backend impleme
 ## Table of contents
 
 * [Features](#features)
-* [Quickstart (docker-compose)](#quickstart-docker-compose)
-* [API endpoints (overview + examples)](#api-endpoints-overview--examples)
+* [Quickstart (docker-compose)](#quickstart--docker-compose-)
+* [API endpoints (overview + examples)](#api-endpoints--overview--examples-)
 * [Data model & schema notes](#data-model--schema-notes)
 * [Transactions & concurrency](#transactions--concurrency)
 * [Testing](#testing)
 * [Metrics & observability](#metrics--observability)
 * [Design decisions & trade-offs](#design-decisions--trade-offs)
 * [Next steps / TODOs](#next-steps--todos)
+* [Developer's note](#developers-note)
 
 ---
 
@@ -167,3 +168,11 @@ Run tests:
 * Implement participant RSVP states and meeting updates / reschedules.
 
 * Add load tests and CI pipeline.
+
+---
+
+## Developer's note
+
+The current implementations gives freedom to the user to play with the APIs. These APIs can be orchestrated to perform actions more specific and limited to the meeting booking and scheduling, something similar to Calendly orTeams meetings.
+
+Another way to implement this problem statement could be having aggregated APIs. A view for one or group of users can aggregate the APIs like `/slots/users/availability`, `/slots/users/{userId}` and `/meetings/users`. Booking a meeting can aggregate APIs `/slots/users/availabilty` and `/meetings`. I can provide with high-level diagrams or implementations if needed.
