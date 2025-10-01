@@ -39,6 +39,7 @@ Prerequisites:
 
 * Docker & docker-compose installed
 * Java (if you want to build locally without Docker)
+* PostgreSQL (if you want to build locally without Docker)
 
 Run the service (build will use included Dockerfile):
 
