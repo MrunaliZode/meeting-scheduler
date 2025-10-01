@@ -62,7 +62,7 @@ class MeetingServiceImplTest {
         slot.setStatus(SlotStatus.FREE);
 
         when(userRepository.findAllById(participantsIds)).thenReturn(List.of(u1, u2));
-        when(slotsHelper.getCommonSlots(participantsIds, "2025-10-01T10:00", "2025-10-01T11:00", SlotStatus.FREE))
+        when(slotsHelper.getCommonSlots(participantsIds, "2025-10-01T10:00", "2025-10-01T11:00"))
                 .thenReturn(List.of(slot));
         when(slotsHelper.getAggregatedSlots(participantsIds, "2025-10-01T10:00", "2025-10-01T11:00", SlotStatus.FREE))
                 .thenReturn(List.of(slot));
@@ -96,7 +96,7 @@ class MeetingServiceImplTest {
     @Test
     void shouldThrowMeetingConflictWhenNoCommonSlots() {
         when(userRepository.findAllById(List.of(1L))).thenReturn(List.of(new User()));
-        when(slotsHelper.getCommonSlots(any(), any(), any(), any())).thenReturn(Collections.emptyList());
+        when(slotsHelper.getCommonSlots(any(), any(), any())).thenReturn(Collections.emptyList());
 
         assertThrows(MeetingConflictException.class, () ->
                 meetingService.bookMeeting(1L, "t", "d", List.of(1L), "2025-10-01T10:00", "2025-10-01T11:00"));

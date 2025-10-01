@@ -20,7 +20,7 @@ public class Meeting {
     private String title;
     private String description;
 
-    @OneToMany(mappedBy = "meeting", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "meeting", cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Set<TimeSlot> slots = new HashSet<>();

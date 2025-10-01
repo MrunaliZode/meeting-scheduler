@@ -29,7 +29,7 @@ public class TimeSlot {
     private User user;
 
     @ManyToOne
-    @JoinColumn(name = "meeting_id")
+    @JoinColumn(name = "meeting_id", nullable = true)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Meeting meeting;

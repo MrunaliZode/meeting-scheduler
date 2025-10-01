@@ -154,6 +154,12 @@ Run tests:
 
 * Configurable time slots with dynamic range for scheduling.
 
+* Preventing creation of meetings/slots in the past.
+
+* Preventing creation of duplicate slots.
+
+* Preventing creation of overlapping slots (2025-10-18T09:00:00 - 2025-10-18T09:30:00 already exists and user is trying to create a time slot 2025-10-18T09:15:00 to 2025-10-18T09:45:00)
+
 * Complete implementation of recurrence rules and bulk-generation of recurring slots.
 
 * Add push/email notifications when meetings are created or changed (event queue + worker).

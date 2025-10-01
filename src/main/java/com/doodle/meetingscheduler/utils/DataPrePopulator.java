@@ -1,4 +1,4 @@
-package com.doodle.meetingscheduler;
+package com.doodle.meetingscheduler.utils;
 
 import com.doodle.meetingscheduler.data.Meeting;
 import com.doodle.meetingscheduler.data.SlotStatus;
@@ -38,8 +38,8 @@ public class DataPrePopulator implements CommandLineRunner {
     }
 
     private void seedUsersAndSlots() {
-        int totalUsers = 200;
-        int slotsPerUser = 100;
+        int totalUsers = 20;
+        int slotsPerUser = 10;
         Random random = new Random();
 
         List<User> users = new ArrayList<>();

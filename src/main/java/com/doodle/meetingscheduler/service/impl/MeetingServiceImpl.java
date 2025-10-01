@@ -53,13 +53,14 @@ public class MeetingServiceImpl implements MeetingService {
         if (from.isAfter(to)) throw new InvalidRequestException("'start' must be before 'end'");
 
         // Fetch participants
+        participantIds.add(userId);
         List<User> participants = userRepository.findAllById(participantIds);
         if (participants.size() != participantIds.size()) {
             throw new InvalidRequestException("Some participant IDs are invalid");
         }
 
         // verify if all participants are free at the specified time
-        List<TimeSlot> commonSlots = slotsHelper.getCommonSlots(participantIds, fromStr, toStr, SlotStatus.FREE);
+        List<TimeSlot> commonSlots = slotsHelper.getCommonSlots(participantIds, fromStr, toStr);
 
         if (commonSlots.isEmpty()) {
             // there are no common free time within specified range

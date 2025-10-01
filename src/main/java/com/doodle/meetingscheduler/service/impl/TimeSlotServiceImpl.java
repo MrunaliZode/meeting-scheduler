@@ -65,8 +65,8 @@ public class TimeSlotServiceImpl implements TimeSlotService {
     @Override
     public TimeSlot updateSlot(Long slotId, String newStart, String newEnd, String newSlotStatus) {
 
-        LocalDateTime newFrom = Utility.toLocalDateTime(newStart);
-        LocalDateTime newTo = Utility.toLocalDateTime(newEnd);
+        LocalDateTime newFrom = (newStart == null) ? LocalDateTime.now() : Utility.toLocalDateTime(newStart);
+        LocalDateTime newTo = (newEnd == null) ? LocalDateTime.now().plusYears(1) : Utility.toLocalDateTime(newEnd);
         SlotStatus newStatus = Utility.toSlotStatus(newSlotStatus);
 
         // find the time slot to update
@@ -109,8 +109,8 @@ public class TimeSlotServiceImpl implements TimeSlotService {
     @Override
     public List<TimeSlot> getCommonFreeSlots(List<Long> userIds, String fromStr, String toStr) {
 
-        LocalDateTime from = Utility.toLocalDateTime(fromStr);
-        LocalDateTime to = Utility.toLocalDateTime(toStr);
+        LocalDateTime from = (fromStr == null) ? LocalDateTime.now().minusYears(1) : Utility.toLocalDateTime(fromStr);
+        LocalDateTime to = (toStr == null) ? LocalDateTime.now().plusYears(1) : Utility.toLocalDateTime(toStr);
 
         // validate the range
         if (from.isAfter(to)) throw new InvalidRequestException("'start' must be before 'end'");
@@ -122,7 +122,7 @@ public class TimeSlotServiceImpl implements TimeSlotService {
         }
 
         // get common availability
-        List<TimeSlot> commonSlots = slotsHelper.getCommonSlots(userIds, fromStr, toStr, SlotStatus.FREE);
+        List<TimeSlot> commonSlots = slotsHelper.getCommonSlots(userIds, fromStr, toStr);
 
         if (commonSlots.isEmpty()) {
             meterRegistry.counter("meetings_conflict_total").increment();

@@ -97,7 +97,7 @@ class SlotsHelperTest {
                 .thenReturn(List.of(slot1U1, slot1U2));
 
         List<TimeSlot> result = slotsHelper.getCommonSlots(
-                List.of(1L, 2L), "2025-10-01T10:00:00", "2025-10-01T12:00:00", SlotStatus.FREE);
+                List.of(1L, 2L), "2025-10-01T10:00:00", "2025-10-01T12:00:00");
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getStartTime()).isEqualTo(slot1U1.getStartTime());
@@ -114,7 +114,7 @@ class SlotsHelperTest {
                 .thenReturn(List.of(slot1U1, slot1U2));
 
         List<TimeSlot> result = slotsHelper.getCommonSlots(
-                List.of(1L, 2L), "2025-10-01T10:00:00", "2025-10-01T12:00:00", SlotStatus.FREE);
+                List.of(1L, 2L), "2025-10-01T10:00:00", "2025-10-01T12:00:00");
 
         assertThat(result).isEmpty();
     }
@@ -127,7 +127,7 @@ class SlotsHelperTest {
                 .thenReturn(List.of(slot1U1, slot2U1));
 
         assertThatThrownBy(() ->
-                slotsHelper.getCommonSlots(List.of(1L, 2L), "2025-10-01T10:00:00", "2025-10-01T12:00:00", SlotStatus.FREE))
+                slotsHelper.getCommonSlots(List.of(1L, 2L), "2025-10-01T10:00:00", "2025-10-01T12:00:00"))
                 .isInstanceOf(MeetingConflictException.class)
                 .hasMessageContaining("Some users have no availability");
     }
@@ -139,7 +139,7 @@ class SlotsHelperTest {
                 .thenReturn(Collections.emptyList());
 
         List<TimeSlot> result = slotsHelper.getCommonSlots(Collections.emptyList(),
-                "2025-10-01T10:00:00", "2025-10-01T12:00:00", SlotStatus.FREE);
+                "2025-10-01T10:00:00", "2025-10-01T12:00:00");
 
         assertThat(result).isEmpty();
     }

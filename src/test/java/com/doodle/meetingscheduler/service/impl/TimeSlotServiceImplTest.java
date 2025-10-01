@@ -153,7 +153,7 @@ class TimeSlotServiceImplTest {
     @Test
     void getCommonFreeSlots_success() {
         when(userRepository.findAllById(anyList())).thenReturn(List.of(user));
-        when(slotsHelper.getCommonSlots(anyList(), any(), any(), eq(SlotStatus.FREE)))
+        when(slotsHelper.getCommonSlots(anyList(), any(), any()))
                 .thenReturn(List.of(slot));
 
         List<TimeSlot> result = timeSlotService.getCommonFreeSlots(List.of(1L), "2025-10-01T10:00:00", "2025-10-01T11:00:00");
@@ -180,7 +180,7 @@ class TimeSlotServiceImplTest {
     @Test
     void getCommonFreeSlots_noCommonSlots() {
         when(userRepository.findAllById(List.of(1L))).thenReturn(List.of(user));
-        when(slotsHelper.getCommonSlots(anyList(), any(), any(), eq(SlotStatus.FREE)))
+        when(slotsHelper.getCommonSlots(anyList(), any(), any()))
                 .thenReturn(Collections.emptyList());
 
         assertThatThrownBy(() ->

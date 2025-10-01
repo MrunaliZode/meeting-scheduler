@@ -39,8 +39,8 @@ public class SlotsHelper {
                                              String to,
                                              SlotStatus status) {
 
-        LocalDateTime start = Utility.toLocalDateTime(from);
-        LocalDateTime end = Utility.toLocalDateTime(to);
+        LocalDateTime start = (from == null) ? LocalDateTime.now() : Utility.toLocalDateTime(from);
+        LocalDateTime end = (to == null) ? LocalDateTime.now().plusYears(1) : Utility.toLocalDateTime(to);
         List<TimeSlot> slots = slotRepository.findByUserIdsAndStartTimeGreaterThanEqualAndEndTimeLessThanEqualAndStatus(userIds, start, end, status);
 
         return slots;
@@ -52,13 +52,11 @@ public class SlotsHelper {
      * @param userIds identities of the users
      * @param from    lower bound time search
      * @param to      upper bound time search
-     * @param status  status to search
      * @return all common availability of the users in the given range and status
      */
     public List<TimeSlot> getCommonSlots(List<Long> userIds,
                                          String from,
-                                         String to,
-                                         SlotStatus status) {
+                                         String to) {
 
         // get all available slots for the range and status
         List<TimeSlot> slots = getAggregatedSlots(userIds, from, to, SlotStatus.FREE);

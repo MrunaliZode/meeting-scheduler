@@ -1,4 +1,4 @@
-package com.doodle.meetingscheduler;
+package com.doodle.meetingscheduler.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
@@ -13,6 +13,7 @@ public class OpenApiConfig {
     public OpenAPI customOpenAPI() {
         Server server = new Server();
         server.setDescription("Meeting scheduling server");
+        server.setUrl("http://localhost:8080");
         return new OpenAPI()
                 .info(new Info()
                         .title("Meeting Scheduler API")
